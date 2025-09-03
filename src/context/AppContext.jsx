@@ -6,10 +6,11 @@ export const AppContext = createContext(null);
 export const AppContextProvider = ({children}) => {
     //
     const navigate = useNavigate();
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(true);
     const [isSeller, setisSeller] = useState(false);
+    const [showUserLogin, setShowUserLogin] = useState(false);
 
-    const value={navigate, user, setUser, setisSeller, isSeller}; // all the values that you want to share across the app
+    const value={navigate, user, setUser, setisSeller, isSeller, showUserLogin, setShowUserLogin}; // all the values that you want to share across the app
 
 
     return <AppContext.Provider value={value}>
