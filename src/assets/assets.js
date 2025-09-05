@@ -169,10 +169,9 @@ export const footerLinks = [
   {
     title: "Follow Us",
     links: [
-      { text: "Instagram", url: "#" },
-      { text: "Twitter", url: "#" },
-      { text: "Facebook", url: "#" },
-      { text: "YouTube", url: "#" },
+      { text: "GitHub", url: "https://github.com/demon-codly" },
+      { text: "Email", url: "sushanth.athakur@gmail.com" },
+      { text: "LinkdIn", url: "https://www.linkedin.com/in/sushanth-thakur/" },
     ],
   },
 ];
