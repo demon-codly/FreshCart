@@ -1,28 +1,92 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useAppcontext } from "../context/AppContext";
 import { dummyAddress, assets } from "../assets/assets";
+import toast from 'react-hot-toast'
 
 const Cart = () => {
 
-    const {products, currency, cartItems, removeFromCart, getCartCount, updateCartItem, navigate, getCartAmount} = useAppcontext()
+    const {products, currency, cartItems, removeFromCart, getCartCount, updateCartItem, navigate, getCartAmount, axios, user, setCartItems} = useAppcontext()
+    const location = useLocation();
     const [ cartArray, setCartArray ] = useState([])
-    const [ addresses, setAddresses ] = useState(dummyAddress)
+    const [ addresses, setAddresses ] = useState([])
     const [ showAddress, setShowAddress ] = useState(false)
-    const [ selectedAddress, setSelectedAddress ] = useState(dummyAddress[0])
+    const [ selectedAddress, setSelectedAddress ] = useState(null)
     const [ paymentOption, setPaymentOption ] = useState("COD")
+
+    
 
     const getCart = ()=>{
         let tempArray = []
         for(const key in cartItems){
             const product = products.find((item)=>item._id == key)
-            product.quantity =  cartItems[key]
-            tempArray.push(product)
+
+            if (product) {
+                const productWithQuantity = { ...product, quantity: cartItems[key]}
+                tempArray.push(productWithQuantity)
+            }
+            
         }
         setCartArray(tempArray)
     }
 
+
+    const getUserAddress = async () => {
+
+        try {
+            const {data} = await axios.get('api/address/get')
+
+            if (data.success){
+                setAddresses(data.addresses)
+                if(data.addresses.length > 0){
+                    setSelectedAddress(data.addresses[0])
+                }
+            }else{
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
     const placeOrder = async () => {
-        
+        try {
+            if(!selectedAddress){
+                return toast.error("please, select an address")
+            }
+
+            //place order with COD
+            if(paymentOption == "COD"){
+                const { data } = await axios.post('api/order/cod', {
+                    userId: user._id,
+                    items: cartArray.map(item=> ({product: item._id, quantity: item.quantity})),
+                    address: selectedAddress._id
+                })
+
+                if(data.success){
+                    toast.success(data.message)
+                    setCartItems({})
+                    navigate('/my-orders')
+                }else{
+                    toast.error(data.message)
+                }
+            } else {
+                // place order with stripe
+                const { data } = await axios.post('api/order/stripe', {
+                    userId: user._id,
+                    items: cartArray.map(item=> ({product: item._id, quantity: item.quantity})),
+                    address: selectedAddress._id
+                })
+
+                if(data.success){
+                    window.location.replace(data.url)
+                }else{
+                    toast.error(data.message)
+                }
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
     }
 
     useEffect(()=>{
@@ -32,12 +96,21 @@ const Cart = () => {
 
     }, [products, cartItems])
 
+    useEffect(()=>{
+        console.log("🟣 CART: The useEffect for fetching addresses is checking its dependency [user]."); // <-- ADD THIS
+
+        if(user){
+            console.log("🟣 CART: User exists, so I will call getUserAddress()."); // <-- ADD THIS
+
+            getUserAddress()
+        }
+    },[user, location.state])
     
     return products.length > 0 && cartItems ? (
         <div className="flex flex-col md:flex-row mt-16">
             <div className='flex-1 max-w-4xl'>
                 <h1 className="text-3xl font-medium mb-6">
-                    Shopping Cart <span className="text-sm text-primary">{getCartCount}</span>
+                    Shopping Cart <span className="text-sm text-primary">{getCartCount()}</span>
                 </h1>
 
                 <div className="grid grid-cols-[2fr_1fr_1fr] text-gray-500 text-base font-medium pb-3">
@@ -120,7 +193,7 @@ const Cart = () => {
 
                 <div className="text-gray-500 mt-4 space-y-2">
                     <p className="flex justify-between">
-                        <span>Price</span><span>{currency}{getCartAmount}</span>
+                        <span>Price</span><span>{currency}{getCartAmount()}</span>
                     </p>
                     <p className="flex justify-between">
                         <span>Shipping Fee</span><span className="text-green-600">Free</span>

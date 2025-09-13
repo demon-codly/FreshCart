@@ -28,7 +28,14 @@ const AddProduct = () => {
             }
 
             const formData = new FormData();
-            formData.append('productData', JSON.stringify(productData))
+
+            //append each field individually,
+            formData.append('name', name);
+            formData.append('description', description);
+            formData.append('category', category);
+            formData.append('price', price);
+            formData.append('offerPrice', offerPrice);
+            
             for (let i = 0; i < files.length; i++) {
                 formData.append('images', files[i])                
             }

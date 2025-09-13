@@ -3,9 +3,8 @@ import Product from "../models/Product.js";
 
 // add product : /api/product/add
 export const addProduct = async (req, res) => {
-    console.log("addProduct endpoint hit");
     try{
-        let productData = JSON.parse(req.body.productData)
+        let productData = req.body;
 
         const images = req.files
 
