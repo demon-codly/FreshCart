@@ -70,7 +70,7 @@ await connectDB();
 await connectCloudinary();
 
 // Allow multiple origins
-const allowedOrigins = ['http://localhost:5173'];
+const allowedOrigins = ['http://localhost:5173', 'https://freshcart-inky-alpha.vercel.app'];
 
 // --- Middleware Configuration ---
 // Any middleware that does NOT parse the body should come first (like cors).
