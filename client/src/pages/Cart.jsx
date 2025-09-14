@@ -64,9 +64,9 @@ const Cart = () => {
                 })
 
                 if(data.success){
-                    toast.success(data.message)
-                    setCartItems({})
-                    navigate('/my-orders')
+                    toast.success(data.message);
+                    setCartItems({}); // Keep for immediate visual feedback
+                    navigate('/my-orders?payment=success'); // Use the same unified navigation
                 }else{
                     toast.error(data.message)
                 }

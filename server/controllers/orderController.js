@@ -93,7 +93,7 @@ export const placeOrderStripe =  async (req, res)=> {
         const session = await stripeInstance.checkout.sessions.create({
             line_items,
             mode: "payment",
-            success_url: `${origin}/loader?next=my-orders`, // A simpler success URL
+            success_url: `${origin}/my-orders?payment=success`, // A simpler success URL
             cancel_url: `${origin}/cart`,
             metadata: {
                 orderId: order._id.toString(), // Use the ID from the order we just created
@@ -171,47 +171,106 @@ export const placeOrderStripe =  async (req, res)=> {
 //     }
 //     response.json({received: true})
 // }
-export const stripeWebhooks = async (request, response) => {
-    // Initialize Stripe inside the function or at the top of the file
-    const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
+// export const stripeWebhooks = async (request, response) => {
+//     console.log("\n--- Stripe Webhook Received ---");
+//     // Initialize Stripe inside the function or at the top of the file
+//     const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
     
-    // The raw request body is needed to verify the signature
-    const sig = request.headers['stripe-signature'];
+//     // The raw request body is needed to verify the signature
+//     const sig = request.headers['stripe-signature'];
 
+//     let event;
+
+//     try {
+//         event = stripeInstance.webhooks.constructEvent(
+//             request.body,
+//             sig,
+//             process.env.STRIPE_WEBHOOK_SECRET // FIX: Corrected typo from STRIPR
+//         );
+//         console.log("✅ Webhook signature verified.");
+//     } catch (error) {
+//         console.log(`❌ Webhook Error: ${error.message}`);
+//         return response.status(400).send(`Webhook Error: ${error.message}`);
+//     }
+
+//     // Handle the checkout.session.completed event
+//     if (event.type === 'checkout.session.completed') {
+//         const session = event.data.object;
+//         const orderId = session.metadata.orderId;
+//         const userId = session.metadata.userId;
+
+
+//         console.log(`Event: checkout.session.completed`);
+//         console.log(`Metadata received -> Order ID: ${orderId}, User ID: ${userId}`);
+
+
+//         // Find the order in your database
+//         const order = await Order.findById(orderId);
+//         if (order) {
+//             // Mark the order as paid
+//             order.isPaid = true;
+//             await order.save();
+            
+//             // Clear the user's cart from the database
+//             await User.findByIdAndUpdate(userId, { cartItems: {} });
+//         }
+//     }
+
+//     // Return a 200 response to acknowledge receipt of the event
+//     response.json({ received: true });
+// };
+
+export const stripeWebhooks = async (request, response) => {
+    console.log("\n--- Stripe Webhook Received ---"); // Log when the endpoint is hit
+
+    const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
+    const sig = request.headers['stripe-signature'];
     let event;
 
     try {
         event = stripeInstance.webhooks.constructEvent(
             request.body,
             sig,
-            process.env.STRIPE_WEBHOOK_SECRET // FIX: Corrected typo from STRIPR
+            process.env.STRIPE_WEBHOOK_SECRET
         );
+        console.log("✅ Webhook signature verified.");
     } catch (error) {
-        console.log("Webhook validation failed:", error.message);
+        console.log(`❌ Webhook Error: ${error.message}`);
         return response.status(400).send(`Webhook Error: ${error.message}`);
     }
 
-    // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const orderId = session.metadata.orderId;
         const userId = session.metadata.userId;
 
-        // Find the order in your database
-        const order = await Order.findById(orderId);
-        if (order) {
+        console.log(`Event: checkout.session.completed`);
+        console.log(`Metadata received -> Order ID: ${orderId}, User ID: ${userId}`);
+
+        if (!orderId || !userId) {
+            console.log("❌ CRITICAL: orderId or userId missing from webhook metadata!");
+            return response.json({ received: true });
+        }
+
+        try {
             // Mark the order as paid
-            order.isPaid = true;
-            await order.save();
+            await Order.findByIdAndUpdate(orderId, { isPaid: true });
+            console.log(`✅ DATABASE: Marked order ${orderId} as paid.`);
             
             // Clear the user's cart from the database
             await User.findByIdAndUpdate(userId, { cartItems: {} });
-        }
-    }
+            console.log(`✅ DATABASE: Cleared cart for user ${userId}.`);
 
-    // Return a 200 response to acknowledge receipt of the event
+        } catch (dbError) {
+            console.log(`❌ DATABASE ERROR during webhook processing: ${dbError.message}`);
+        }
+    } else {
+        console.log(`- Received unhandled event type: ${event.type}`);
+    }
+    
     response.json({ received: true });
 };
+
 
 // Get Orders by User ID: /api/order/user
 export const getUserOrders = async (req, res)=> {
