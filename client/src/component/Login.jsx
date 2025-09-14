@@ -1,5 +1,5 @@
 import React from 'react'
-import { useAppcontext } from '../context/appContext'
+import { useAppcontext } from '../context/AppContext'
 import toast from "react-hot-toast"
 
 
