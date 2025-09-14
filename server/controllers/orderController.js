@@ -31,7 +31,7 @@ export const placeOrderCOD =  async (req, res)=> {
 
     
         await User.findByIdAndUpdate(userId, {cartItems: {}})
-        return res.json({ success: true, url: session.url })
+        return res.json({ success: true, message: "Order placed successfully" })
 
     } catch (error) {
         return res.json({success: false, message: error.message});
@@ -105,6 +105,7 @@ export const placeOrderStripe =  async (req, res)=> {
         return res.json({ success: true, url: session.url})
 
     } catch (error) {
+        console.log(error)
         return res.json({success: false, message: error.message});
     }
 }
